@@ -1,0 +1,66 @@
+apiVersion: landscaper.gardener.cloud/v1alpha1
+kind: Blueprint
+
+name: certificate-management-util
+
+localTypes:
+  tls:
+    type: object
+    properties:
+      privKey:
+        description: "Base64 PEM encoded priv key"
+        type: string
+      pubKey:
+        description: "Base64 PEM encoded pub key"
+        type: string
+  tlsWithCA:
+    type: object
+    "allOf": [{ "$ref": "local://tls" }],
+    properties:
+      ca:
+        description: "Base64 PEM encoded ca"
+        type: string
+
+imports:
+- name: dnsNames
+  schema:
+    type: array
+    items:
+      type: string
+
+- name: tls
+  required: false
+  schema:
+    description: "optionally use the given private key"
+    "$ref": "local://tls"
+
+exports:
+- name: tls
+  schema:
+    "$ref": "local://tlsWithCA"
+
+
+deployExecutions:
+- name: default
+  type: GoTemplate
+  template: |
+    deployItems:
+    - name: deploy
+      type: landscaper.gardener.cloud/container
+      config:
+        apiVersion: container.deployer.landscaper.gardener.cloud/v1alpha1
+        kind: ProviderConfiguration
+
+        componentDescriptor: {{ toJson .componentDescriptorDef }}
+        blueprint: {{ toJson .blueprint }}
+
+        continuousReconcile:
+          every: 24h
+
+        importValues: {{ toJson .imports }}
+
+        {{- $resource := getResource .cd "name" "alpine" }}
+        image: {{ $resource.access.imageReference }}
+        command: ["sh", "-c"]
+        args:
+        - $CONTENT_PATH/certificate-management-util --import $IMPORTS_PATH --export $EXPORT_PATH

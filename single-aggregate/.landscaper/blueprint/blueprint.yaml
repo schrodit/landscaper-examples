@@ -1,0 +1,55 @@
+apiVersion: landscaper.gardener.cloud/v1alpha1
+kind: Blueprint
+
+name: aws-extension
+
+imports:
+- name: aggCluster
+  type: target
+  targetType: landscaper.gardener.cloud/kubernetes-cluster
+
+- name: regions
+  type: data
+  schema:
+    "$ref": "cd://componentReferences/landscaper-utils/resources/machine-images-schemas#regions"
+- name: additionalImages
+  type: data
+  schema:
+    "$ref": "cd://componentReferences/landscaper-utils/resources/machine-images-schemas#additionalImages"
+
+subinstallations:
+- apiVersion: landscaper.gardener.cloud/v1alpha1
+  kind: InstallationTemplate
+
+  name: machine-images
+
+  blueprint:
+    ref: cd://componentReferences/landscaper-utils/resources/machine-images-blueprint
+
+  imports:
+    data:
+    - name: regions
+      dataRef: regions
+    - name: additionalImages
+      dataRef: additionalImages
+
+  exports:
+    data:
+    - name: machine-images
+      dataRef: machine-images
+
+- apiVersion: landscaper.gardener.cloud/v1alpha1
+  kind: InstallationTemplate
+
+  name: aws-extension
+
+  blueprint:
+    ref: local://aws-extension.yaml
+
+  imports:
+    targets:
+    - name: cluster
+      target: aggCluster
+    data:
+    - name: machineImages
+      dataRef: machine-images

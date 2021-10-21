@@ -1,0 +1,17 @@
+---
+name: alpine
+type: ociImage
+relation: local
+access:
+  type: ociRegistry
+  imageReference: alpine:3.14.2
+---
+name: echo-server-blueprint
+type: landscaper.gardener.cloud/blueprint
+relation: local
+input:
+  type: "dir"
+  path: "./blueprint"
+  compress: true
+  mediaType: "application/vnd.gardener.landscaper.blueprint.v1.tar+gzip"
+---
